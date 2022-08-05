@@ -1,0 +1,226 @@
+﻿
+@{
+    ViewData["Title"] = "Home Page";
+}
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+    <link href="~/css/bootstrap.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container">
+        <h2>Books Record</h2>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal" onclick="clearTextBox()">Add New Book</button><br /><br />
+    </div>
+    <div class="modal" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">×</button>
+                    <h4 class="modal-title" id="myModalLabel">Add Book</h4>
+                </div>
+                <div class="modal-body">
+                    <form method="post">
+                        <div class="form-group">
+                            <label>BookID</label>
+                            <input type="text" class="form-control" name="BookID" id="BookID" placeholder="Id" disabled="disabled" />
+                        </div>
+                        <div class="form-group">
+                            <label>BookTitle</label>
+                            <input type="text" class="form-control" name="BookTitle" id="BookTitle" placeholder="BookTitle" />
+                        </div>
+                        <div class="form-group">
+                            <label>PubDate</label>
+                            <input type="datetime" class="form-control" name="PubDate" id="PubDate" placeholder="PubDate" />
+                        </div>
+                        <div class="form-group">
+                            <label>Price</label>
+                            <input type="number" class="form-control" name="Price" id="Price" placeholder="Price" />
+                        </div>
+                        <div class="form-group">
+                            <label>Quantity</label>
+                            <input type="number" class="form-control" name="Quantity" id="Quantity" placeholder="Quantity" />
+                        </div>
+                        <div class="form-group">
+                            <label>WriterId</label>
+                            <input type="number" class="form-control" name="WriterId" id="WriterId" placeholder="WriterId" />
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" href="#" class="btn btn-primary" id="btnAdd" onclick="return Add();">Add</button>
+                    <button type="submit" value="submit" class="btn btn-primary" id="btnUpdate" style="display:none;" onclick="UpdateBook();">Update</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button onclick="loadBooks()">loadData</button>
+    <div id="Book"></div>
+    <script>
+        function loadBooks() {
+            let xhr = new XMLHttpRequest();
+            xhr.open('GET', '/home/LoadData');
+            xhr.send();
+            xhr.onload = function () {
+                if (xhr.status != 200 && xhr.readyState != 4) {
+                    alert(`Error ${xhr.status}: ${xhr.statusText}`);
+                }
+                else {
+                    document.getElementById("Book").innerHTML = ""
+                    let obj = JSON.parse(xhr.response)
+                    var table = document.createElement("table"), row, cellBookTitle, cellPubDate, cellPrice, cellQuantity, cellWriterId, cellAction;
+                    table.classList.add("table");
+                    table.classList.add("border");
+                    header = table.createTHead()
+                    var hrow = header.insertRow();
+                    var hBookTitlecell = hrow.insertCell();
+                    var hPubDatecell = hrow.insertCell();
+                    var hPricecell = hrow.insertCell();
+                    var hQuantitycell = hrow.insertCell();
+                    var hWriterIdcell = hrow.insertCell();
+                    var hActioncell = hrow.insertCell();
+                    hBookTitlecell.innerHTML = "BookTitle"
+                    hPubDatecell.innerHTML = "PubDate"
+                    hPricecell.innerHTML = "Price"
+                    hQuantitycell.innerHTML = "Quantity"
+                    hWriterIdcell.innerHTML = "WriterId"
+                    hActioncell.innerHTML = "Action"
+                    document.getElementById("Book").appendChild(table);
+                    for (var i = 0; i < obj.length; i++) {
+                        row = table.insertRow();
+                        cellBookTitle = row.insertCell();
+                        cellPubDate = row.insertCell();
+                        cellPrice = row.insertCell();
+                        cellQuantity = row.insertCell();
+                        cellWriterId = row.insertCell();
+                        cellAction = row.insertCell();
+
+                        cellBookTitle.innerHTML = obj[i].bookTitle
+                        cellPubDate.innerHTML = obj[i].pubDate
+                        cellPrice.innerHTML = obj[i].price
+                        cellQuantity.innerHTML = obj[i].quantity
+                        cellWriterId.innerHTML = obj[i].writerId
+                        cellAction.innerHTML += '<a onclick="getbyID(' + obj[i].bookID + ')" class="btn btn-warning">Edit</a> | <a onclick="DeleteBook(' + obj[i].bookID + ')" class="btn btn-danger">Delete</a>'
+                    }
+                }
+            };
+        }
+        function getbyID(ID) {
+            $('#BookTitle').css('border-color', 'lightgrey');
+            $('#PubDate').css('border-color', 'lightgrey');
+            $('#Price').css('border-color', 'lightgrey');
+            $('#Quantity').css('border-color', 'lightgrey');
+            $('#WriterId').css('border-color', 'lightgrey');
+            $.ajax({
+                url: "/Home/EditBook/" + ID,
+                typr: "GET",
+                contentType: "application/json;charset=UTF-8",
+                dataType: "json",
+                success: function (result) {
+                    $('#BookID').val(result.bookID);
+                    $('#BookTitle').val(result.bookTitle);
+                    $('#PubDate').val(result.pubDate);
+                    $('#Price').val(result.price);
+                    $('#Quantity').val(result.quantity);
+                    $('#WriterId').val(result.writerId);
+                    $("#myModal").modal("show");
+                    $('#btnUpdate').show();
+                    $('#btnAdd').hide();
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+            return false;
+        }
+        function DeleteBook(ID) {
+            var ans = confirm("Are you sure you want to delete this Record?");
+            if (ans) {
+                $.ajax({
+                    url: "/Home/DeleteBook/" + ID,
+                    type: "POST",
+                    contentType: "application/json;charset=UTF-8",
+                    dataType: "json",
+                    error: function (result) {
+                        loadBooks();
+                    },
+                });
+            }
+        }
+        function UpdateBook() {
+            var bookDTO = {
+                bookId: $('#BookID').val(),
+                bookTitle: $('#BookTitle').val(),
+                pubDate: $('#PubDate').val(),
+                price: $('#Price').val(),
+                quantity: $('#Quantity').val(),
+                writerId: $('#WriterId').val(),
+            };
+            console.log(bookDTO)
+            $.ajax({
+                url: "/Home/EditBook/",
+                type: 'POST',
+                data: bookDTO,
+                success: function (result) {
+                    loadBooks();
+                    $('#myModal').modal('hide');
+                    $('#BookId').val("");
+                    $('#BookTitle').val("");
+                    $('#PubDate').val("");
+                    $('#Price').val("");
+                    $('#Quantity').val("");
+                    $('#WriterId').val("");
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+        }
+        function Add() {
+            var book = {
+                BookID: $('#BookID').val(),
+                BookTitle: $('#BookTitle').val(),
+                PubDate: $('#PubDate').val(),
+                Price: $('#Price').val(),
+                Quantity: $('#Quantity').val(),
+                WriterId: $('#WriterId').val(),
+            };
+            $.ajax({
+                url: "/Home/Create",
+                data: book,
+                type: "POST",
+                success: function (result) {
+                    loadBooks();
+                    $('#myModal').modal('hide');
+                    $('#BookID').val("");
+                    $('#BookTitle').val("");
+                    $('#PubDate').val("");
+                    $('#Price').val("");
+                    $('#Quantity').val("");
+                    $('#WriterId').val("");
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+        }
+        function clearTextBox() {
+            $('#BookID').val("");
+            $('#BookTitle').val("");
+            $('#PubDate').val("");
+            $('#Price').val("");
+            $('#Quantity').val("");
+            $('#WriterId').val("");
+            $('#btnUpdate').hide();
+            $('#btnAdd').show();
+            $('#BookTitle').css('border-color', 'lightgrey');
+            $('#PubDate').css('border-color', 'lightgrey');
+            $('#Price').css('border-color', 'lightgrey');
+            $('#Quantity').css('border-color', 'lightgrey');
+            $('#WriterId').css('border-color', 'lightgrey');
+
+        }
+    </script>
+</body>
+</html>
